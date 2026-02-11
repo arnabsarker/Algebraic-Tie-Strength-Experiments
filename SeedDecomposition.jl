@@ -40,45 +40,17 @@ function main(my_dataset, use_CC=false)
     B2 = createEdgeToTriangleIncidenceMatrix(trianglelist, elist)
     B2T = sparse(B2')
 
-    println("preprocessing...")
-    ntris = size(B2,2)
-    
-    d2 = max.(1, vec(sum(abs.(B2),dims=2)))
-    D2 = Diagonal(d2)
-    D2_inv = Diagonal(1.0 ./ d2)
-    D2_sqrt = sqrt.(D2)
-    D2_inv_sqrt = sqrt.(D2_inv)
-
-    B1wT = D2 * B1T
-    B2wT = B2
-
-    d1 = vec(2 .* (abs.(B1) * d2))
-    D1 = Diagonal(d1)
-    D1_inv = Diagonal(1.0 ./ d1)
-
-    d3 = ones(Float64, ntris) ./ 3.0
-    D3 = Diagonal(d3)
-
-    M1 = D2_inv_sqrt * D2 * B1T * D1_inv
-    M2 = B1 * D2_sqrt
-    M3 = D2_inv_sqrt * B2
-    M4 = D3 * B2T * D2_inv * D2_sqrt
-
-    beta = 2.5
-    LM_L1_sym = LinearMap(M1) * LinearMap(M2) + LinearMap(M3) * LinearMap(M4)
 
     num_edge=size(elist,1)
     
         
-    PR_op = LinearMap(beta * I, num_edge) + LM_L1_sym
     list_n1      = Vector{Int64}(undef, num_edge)
     list_n2      = Vector{Int64}(undef, num_edge)
-    list_harmPR  = Vector{Float64}(undef, num_edge)
-    list_gradPR  = Vector{Float64}(undef, num_edge)
-    list_curlPR  = Vector{Float64}(undef, num_edge)
-    list_totPR   = Vector{Float64}(undef, num_edge)
+    list_harm    = Vector{Float64}(undef, num_edge)
+    list_grad    = Vector{Float64}(undef, num_edge)
+    list_curl    = Vector{Float64}(undef, num_edge)
 
-    @showprogress 1 "Computing Edge PR..." for i in 1:num_edge
+    @showprogress 1 "Computing Hodge Decomposition Measures..." for i in 1:num_edge
         n1 = findnz(B1[:,i])[1][1]
         #println(n1)
         n2 = findnz(B1[:,i])[1][2]
@@ -87,36 +59,30 @@ function main(my_dataset, use_CC=false)
         #Put one at the position of the new edge
         b = zeros(Float64, num_edge)
         b[i] = 1.0
-        c = D2_inv_sqrt * b
 
         # Solve system
-        y = cg(PR_op, (beta-2) .* c, reltol=1e-4)
-        s = D2_sqrt * y
-
-        sol_grad_w = B1wT*lsqr(B1wT, s, atol=1e-3, btol=1e-3)
-        sol_curl_w = B2wT*lsqr(B2wT, s, atol=1e-3, btol=1e-3)
-        sol_harm_w = s - sol_grad_w - sol_curl_w
+        sol_grad = B1T*lsqr(B1T, b, atol=1e-3, btol=1e-3)
+        sol_curl = B2*lsqr(B2, b, atol=1e-3, btol=1e-3)
+        sol_harm = b - sol_grad - sol_curl
 
         list_n1[i]      = n1
         list_n2[i]      = n2
-        list_harmPR[i]  = norm(sol_harm_w)
-        list_gradPR[i]  = norm(sol_grad_w)
-        list_curlPR[i]  = norm(sol_curl_w)
-        list_totPR[i]   = norm(s)
+        list_harm[i]  = norm(sol_harm)
+        list_grad[i]  = norm(sol_grad)
+        list_curl[i]  = norm(sol_curl)
     end
 
     final_df = DataFrame(
         node_1 = list_n1, 
         node_2 = list_n2, 
-        harmPR = list_harmPR, 
-        curlPR = list_curlPR, 
-        gradPR = list_gradPR, 
-        totPR  = list_totPR
+        harm = list_harm, 
+        curl = list_curl, 
+        grad = list_grad, 
     )
     if(use_CC)
-        CSV.write(output_prefix * "/cc_edgePR.csv", final_df)
+        CSV.write(output_prefix * "/cc_seed_decomp.csv", final_df)
     else
-        CSV.write(output_prefix * "/edgePR.csv", final_df)
+        CSV.write(output_prefix * "/seed_decomp.csv", final_df)
     end
 end
 
