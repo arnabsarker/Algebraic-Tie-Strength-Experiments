@@ -6,25 +6,45 @@ using LinearAlgebra
 using LinearMaps
 using IterativeSolvers
 using ProgressMeter
+using ArgParse
+
 include("./SimplicialLaplacians.jl");
 
-function main(my_dataset, use_CC=false)
-    prefix = "./Data/" * my_dataset * "/"
-    
-    if(use_CC)
-        triangle_df = CSV.read(prefix * "clique_tlist.csv", DataFrame);
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table! s begin
+        "input_directory"
+            help = "Directory containing input CSVs (edges.csv, triangles.csv, etc.)"
+            required = true
+        "output_directory"
+            help = "Directory where results will be saved"
+            required = true
+        "--compute_clique_complex", "-c"
+            help = "Flag to use clique complex files (clique_tlist.csv)"
+            action = :store_true
+    end
+
+    return parse_args(s)
+end
+
+function main(input_dir, output_dir, use_CC=false)
+    if use_CC
+        triangle_file = joinpath(input_dir, "clique_tlist.csv")
     else
-        triangle_df = CSV.read(prefix * "triangles.csv", DataFrame);
+        triangle_file = joinpath(input_dir, "triangles.csv")
     end
-    edge_df = CSV.read(prefix * "edges.csv", DataFrame);
+    edge_file = joinpath(input_dir, "edges.csv")
 
+    println("Scanning input directory: $input_dir")
+    triangle_df = CSV.read(triangle_file, DataFrame)
+    edge_df     = CSV.read(edge_file, DataFrame)
 
-    output_prefix = "./Outputs/$(my_dataset)"
-    if(!isdir(output_prefix))
-        mkdir(output_prefix)
+    if !isdir(output_dir)
+        println("Creating output directory: $output_dir")
+        mkpath(output_dir) 
     end
 
-    
     triangle_matrix = Matrix(triangle_df[:, 1:3]);
     edge_matrix = Matrix(edge_df[:, 1:2]);
 
@@ -79,12 +99,19 @@ function main(my_dataset, use_CC=false)
         curl = list_curl, 
         grad = list_grad, 
     )
-    if(use_CC)
-        CSV.write(output_prefix * "/cc_seed_decomp.csv", final_df)
-    else
-        CSV.write(output_prefix * "/seed_decomp.csv", final_df)
-    end
+    
+    output_filename = use_CC ? "cc_seed_decomp.csv" : "seed_decomp.csv"
+    save_file_path = joinpath(output_dir, output_filename)
+    CSV.write(save_file_path, final_df)
+    println("Success! Results saved to directory: $output_dir")
+    println("Filename: $output_filename")
 end
 
-
-main(string(ARGS[1]))
+let
+    args = parse_commandline()
+    main(
+        args["input_directory"], 
+        args["output_directory"], 
+        args["compute_clique_complex"]
+    )
+end
