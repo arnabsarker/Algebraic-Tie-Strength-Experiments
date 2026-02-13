@@ -19,7 +19,7 @@ The repository contains the following files:
 | `EdgePR.jl` | Computes Edge PageRank vectors and their Hodge Decomposition. |
 | `SimplicialLaplacians.jl` | Helper functions for generating boundary operators. |
 
-**Note:** The full datasets analyzed in the paper can be found in the [Algebraic-Tie-Strength-Data](https://github.com/arnabsarker/Algebraic-Tie-Strength-Data) repository.
+**Note:** The full datasets analyzed in the paper can be found in the [Capturing-Tie-Strength-Data](https://github.com/arnabsarker/Capturing-Tie-Strength-Data) repository.
 
 ---
 
