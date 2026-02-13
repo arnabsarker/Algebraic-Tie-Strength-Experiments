@@ -8,6 +8,8 @@ This repository provides Julia scripts for computing **Edge PageRank** and **Hod
 
 ---
 
+## Files
+
 The repository contains the following files:
 
 | File / Directory | Description |
@@ -21,21 +23,22 @@ The repository contains the following files:
 
 ---
 
+## Sample Usage
+
 ### Prerequisites
 These scripts are written in **Julia** and have been tested on version 1.6.1. Ensure you have the following packages installed:
 * `LinearAlgebra`
 * `SparseArrays`
 
-### Sample Usage
 
-#### 1. Hodge Decomposition
+### 1. Hodge Decomposition
 To compute Hodge Decomposition centrality measures for a simplicial complex:
 ```bash
 julia SeedDecomposition.jl <input_directory> <output_directory>
 
 ```
 
-#### 2. Edge PageRank
+### 2. Edge PageRank
 
 To compute Edge PageRank centrality measures:
 
